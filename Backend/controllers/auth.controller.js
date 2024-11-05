@@ -98,11 +98,11 @@ export const refreshToken = async (req,res) => {
         }
         res.status(200).json({ message: "token is refreshed"})
     } catch (error) {
-        res.status(500).json({error: error.message})
+        res.status(500).json({message: error.message})
     }
 }
 
-export const getProfile = async () => {
+export const getProfile = async (req,res) => {
     // const {id}  = req.params 
     // try {
     //     const user = await User.findById(id).select("-password")
@@ -112,6 +112,6 @@ export const getProfile = async () => {
     try {
         res.status(200).json(req.user)        
     } catch (error) {
-        res.status(500).json({message:error.message})
+        res.status(500).json({message: error.message})
     }
 }
