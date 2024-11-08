@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import  {BarChart, PlusCircle, ShoppingBasket}  from 'lucide-react'
 import CreateProductForm from '../components/CreateProductForm';
 import GetProducts from '../components/GetProducts';
-import GetAnalytics from '../components/GetAnalytics';
+import { useProductStore } from '../stores/useProductStore';
+import AnalyticsTab from '../components/AnalyticsTab';
 
 
 const tabs = [
@@ -14,7 +15,12 @@ const tabs = [
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState("create");
+    const {fetchAllProducts} = useProductStore()
     console.log(activeTab)
+
+    useEffect(()=> {
+        fetchAllProducts()
+    },[fetchAllProducts])
   return (
     <div className="bg-gray-900 min-h-screen text-white relative overflow-hidden">
       <div className="mx-auto z-10 relative px-4 py-16">
@@ -38,7 +44,7 @@ const AdminDashboard = () => {
         </div>
         {activeTab === "create" && <CreateProductForm/>}
         {activeTab === "products" && <GetProducts/>}
-        {activeTab === "analytics" && <GetAnalytics/>}
+        {activeTab === "analytics" && <AnalyticsTab/>}
       </div>
     </div>
   );

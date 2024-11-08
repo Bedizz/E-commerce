@@ -9,7 +9,7 @@ router.get("/featured",featuredProducts)
 router.get("/category/:category",getProductsByCategory)
 router.get("/recommendedProducts",recommendedProducts)
 router.post("/",protectRoute,adminRoute,createProduct)
-router.get("/products",protectRoute,adminRoute,getAllProducts)
+router.get("/",protectRoute,adminRoute,getAllProducts)
 router.patch("/:id",protectRoute,adminRoute,toggleFeaturedProduct)
 router.post("/:id",protectRoute,adminRoute,deleteProduct)
 

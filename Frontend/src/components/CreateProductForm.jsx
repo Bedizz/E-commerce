@@ -1,12 +1,14 @@
 import React,{useState} from 'react'
 import { motion } from 'framer-motion'
 import { Loader, PlusCircle, Upload } from 'lucide-react';
+import { useProductStore } from "../stores/useProductStore";
+import toast from 'react-hot-toast';
 
 const categories = [
-  "jean","t-shirt","sweater","shoe","glasses","jacket","suit","bag"
+  "jeans","t-shirts","sweaters","shoes","glasses","jackets","suits","bags"
 ]
 const CreateProductForm = () => {
-  const loading = false;
+  const {createProduct,loading} = useProductStore();
   const [newProduct, setNewProduct] = useState({
     name: "",
     description: "",
@@ -15,14 +17,28 @@ const CreateProductForm = () => {
     image: "",
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault();
+    try {
+      console.log(newProduct)
+      await createProduct(newProduct);
+      toast.success("Product created successfully")
+      setNewProduct({
+         name: "",
+         description: "",
+         price: "",
+         category: "",
+         image: "",
+       })
+    } catch (error) {
+      toast.error("Failed to create a new product")
+    }
   }
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if(file) {
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onloadend = () => {
         setNewProduct({...newProduct, image: reader.result})
       }
       reader.readAsDataURL(file)   // converts the image to a base64 encoded string and sets it as the image property of the newProduct state
@@ -130,6 +146,7 @@ const CreateProductForm = () => {
             onChange={handleImageChange}
             className="sr-only"
             accept="image/*"
+            required
           />
           <label
             htmlFor="image"

@@ -54,11 +54,46 @@ export const useUserStore = create((set) => ({
             toast.error("An error occurred");
     }
     },
+    refreshToken: async() => {
+        if(get().checkingAuth) return;
+        set({checkingAuth: true});
+        try {
+            const res = await axios.post("/auth/refresh-token");
+            set({ checkingAuth: false})
+            return response.data;
+        } catch (error) {
+            set({checkingAuth: false, user: null});
+        }
+    }
+
+}));
     // interceptors kullanmalıyız çünkü token 15 dakika sonra expire oluyor ve kullanıcıyı otomatik olarak logout olacak. Bunu önlemek için bir interceptor kullanacağız. 
     // Bu interceptor kullanıcının token'ını refresh edecek ve kullanıcıyı logout yapmayacak.
     // Bu interceptor'ı kullanmak için axios.js dosyasına gidip axios instance'ına ekleyeceğiz.
-    
+let tokenRefreshRequest = null;
 
-
-}));
+axios.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
+        if(error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+            try {
+                // if a refresh is already in progress, wait for it to finish
+                if(tokenRefreshRequest) {
+                    await tokenRefreshRequest;
+                    return axios(originalRequest);
+                }
+                tokenRefreshRequest = useUserStore.getState().refreshToken();
+                await tokenRefreshRequest;
+                tokenRefreshRequest = null;
+                return axios(originalRequest);
+            } catch (refreshError) {
+                useUserStore.getState().logOut();
+                return Promise.reject(refreshError);
+            }
+        }
+        return Promise.reject(error);
+    }
+)
 

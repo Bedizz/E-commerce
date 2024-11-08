@@ -1,24 +1,33 @@
 import { Route, Routes, Navigate } from "react-router-dom"
 import HomePage from "./pages/HomePage"
-import Dashboard from "./pages/Dashboard"
 import Login from "./pages/Login"
 import SignUp from "./pages/SignUp"
 import Navbar from "./components/Navbar"
 import { Toaster } from "react-hot-toast"
 import { useUserStore } from "./stores/useUserStore"
-
 import { useEffect } from "react"
 import LoadingSpinner from "./components/Loading"
 import AdminDashboard from "./pages/AdminDashboard"
+import CategoryPage from "./pages/CategoryPage"
+import Cart from "./pages/Cart"
+import { useCartStore } from "./stores/useCartStore"
+import PurchaseSuccessPage from "./pages/PurchaseSuccessPage"
+import PurchaseCancelPage from "./pages/PurchaseCancel"
+
 
 
 function App() {
   const {user,checkAuth,checkingAuth} = useUserStore()
+  const {getCartItems} = useCartStore()
   
 
   useEffect(()=> {
     checkAuth()
   },[checkAuth])
+  useEffect(() => {
+    if(!user) return;
+    getCartItems()
+  },[user,getCartItems])
   
  if (checkingAuth) return <LoadingSpinner />
   return (
@@ -35,6 +44,10 @@ function App() {
         <Route path="/signup" element={!user ? <SignUp /> : <Navigate to="/"/> } />
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/"/> } />
         <Route path="/admin-dashboard" element={user?.role === "admin" ? <AdminDashboard /> : <Navigate to="/login"/> } />
+        <Route path="/cart" element={user?.role === "admin" ? <Cart /> : <Navigate to="/login"/> } />
+        <Route path="/category/:category" element={<CategoryPage />} />
+        <Route path="/purchase-success" element={user ? <PurchaseSuccessPage /> : <Navigate to="/login"/> } />
+        <Route path="/purchase-cancelled" element={user ? <PurchaseCancelPage /> : <Navigate to="/login"/> } />
         
       </Routes>
       <Toaster/>

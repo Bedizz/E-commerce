@@ -8,6 +8,7 @@ import paymentRoutes from "./routes/payment.route.js"
 import { connectDB } from './db/db.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import analyticsRoutes from './routes/analytics.route.js';
 
 
 
@@ -21,15 +22,16 @@ app.use(cors({
     origin: "http://localhost:5173",
     credentials: true
 }))
-app.use(express.json())
+app.use(express.json({limit : "10mb"}))
 app.use(cookieParser())
 
 //routes
 app.use("/api/auth", authRoutes)
-app.use("/api/product",productsRoutes)
+app.use("/api/products",productsRoutes)
 app.use("/api/cart",cartRoutes)
-app.use("api/coupons", couponRoutes)
+app.use("/api/coupons", couponRoutes)
 app.use("/api/payments", paymentRoutes)
+app.use("/api/analytics", analyticsRoutes)
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:`+PORT)

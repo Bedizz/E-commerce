@@ -1,6 +1,11 @@
 import {stripe} from "../utils/stripe.js";
 import Coupon from "../models/coupon.model.js"
 import Order from "../models/order.model.js"
+import dotenv from "dotenv"
+
+dotenv.config()
+
+
 export const createCheckoutSession = async (req, res) => {
     const {products,couponCode} = req.body
     try {
@@ -24,7 +29,7 @@ export const createCheckoutSession = async (req, res) => {
                     },
                     unit_amount: amount,
                 },
-                quantity: 1,
+                quantity: product.quantity || 1,
             }
         })
         let coupon = null;
@@ -32,18 +37,16 @@ export const createCheckoutSession = async (req, res) => {
             // Check if the coupon code is valid
             coupon = await Coupon.findOne({ code: couponCode, userId: req.user._id, isActive:true})
             if(coupon) {
-                totalAmount -= Math.round(totalAmount * coupon.discountPercentage / 100)
+                totalAmount -= Math.round((totalAmount * coupon.discountPercentage) / 100);
             }
-            if(!coupon){
-                return res.status(400).json({message:"Invalid coupon code"})
-            }
+
         }
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ["card"],
             line_items: lineItems,
             mode: "payment",
-            success_url: `${process.env.CLIENT_URL}/order/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.CLIENT_URL}/cart`,
+            success_url: `${process.env.CLIENT_URL}/purchase-success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.CLIENT_URL}/purchase-cancelled`,
             // customer_email: req.user.email,
             discounts: coupon ? [
                 {
@@ -61,7 +64,7 @@ export const createCheckoutSession = async (req, res) => {
                     }))),
             },
         })
-        if(totalAmount >= 20000) {// 200 dollars ==> 200.00
+        if(totalAmount >= 200000) {// 200 dollars ==> 200.00
         await newCoupon(req.user._id) }
         res.status(200).json({ id: session.id, totalAmount: totalAmount / 100 })
 
@@ -80,6 +83,7 @@ const createStripeCoupon = async (discountPercentage) => {
 }
 // this function creates a new coupon in the database and returns the coupon object 
 const newCoupon =  async (userId) => {
+    await Coupon.findOneAndDelete({userId: userId})
     const newCoupon = new Coupon({
         code: "GIFT"+ Math.random().toString(36).substring(2,8).toUpperCase(),
         discountPercentage: 10,
@@ -118,6 +122,12 @@ export const checkoutSuccess = async (req,res) => {
                 stripeSessionId: sessionId,
             })
              await newOrder.save()
+             res.status(200).json({
+				success: true,
+				message: "Payment successful, order created, and coupon deactivated if used.",
+				orderId: newOrder._id,
+			});
+		
         }
     } catch (error) {
         res.status(500).json({message:error.message})

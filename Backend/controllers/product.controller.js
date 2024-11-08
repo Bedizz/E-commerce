@@ -1,10 +1,11 @@
 import { redis } from "../db/redis.js"
 import Product from "../models/product.model.js"
+import cloudinary from "../utils/cloudinary.js"
 
 export const getAllProducts = async (req,res) => {
     try {
         const products = await Product.find()
-        res.status(201).json({message: "All products",products})
+        res.status(201).json({products})
     } catch (error) {
         res.status(500).json({message:error.message})
     }
@@ -31,27 +32,29 @@ export const featuredProducts = async (req,res) => {
     }
 }
 
-export const createProduct = async (req,res) => {
-try {
-    const {name,description,image,price,category,quantity} = req.body
-    let cloudinaryResponse = null
-    if(image) {
-        await cloudinary.uploader.upload(image, {folder: "products"})
-    }
-    const product = await Product.create({
-        name,
-        description,
-        image: cloudinaryResponse.secure_url ? cloudinaryResponse.secure_url : "",
-        price,
-        category,
-        quantity
-    })
+export const createProduct = async (req, res) => {
+	try {
+		const { name, description, price, image, category } = req.body;
 
-    res.status(201).json({message: "Product created successfully",product})
-} catch (error) {
-    res.status(500).json({message:error.message})
-}
-}
+		let cloudinaryResponse = null;
+
+		if (image) {
+			cloudinaryResponse = await cloudinary.uploader.upload(image, { folder: "products" });
+		}
+
+		const product = await Product.create({
+			name,
+			description,
+			price,
+			image: cloudinaryResponse?.secure_url ? cloudinaryResponse.secure_url : "",
+			category,
+		});
+
+		res.status(201).json(product);
+	} catch (error) {
+		res.status(500).json({ message: "Server error", error: error.message });
+	}
+};
 
 export const deleteProduct = async (req,res) => {
     try {
@@ -69,6 +72,7 @@ export const deleteProduct = async (req,res) => {
         }
         await Product.findByIdAndDelete(req.params.id)
         // await Product.deleteOne(product) // another way to delete
+        res.status(200).json({message: "Product deleted successfully"})
     } catch (error) {
         res.status(500).json({message:error.message})
     }
@@ -77,7 +81,7 @@ export const deleteProduct = async (req,res) => {
 export const recommendedProducts = async (req,res) => {
     try {
         const products = await Product.aggregate([
-            {$sample: {size: 3}},
+            {$sample: {size: 4}},
             {$project: {name: 1,price: 1,description: 1,_id:1,image: 1}}
         ])
         res.status(200).json({message: "Recommended products",products})
@@ -106,9 +110,9 @@ export const toggleFeaturedProduct = async(req,res) => {
             return res.status(404).json({message: "Product not found"})
         }
         product.isFeatured = !product.isFeatured
-        await product.save()
+        const updatedProduct = await product.save()
         await updateFeaturedProductsCache()
-        res.status(200).json({message: "Product updated successfully",product})
+        res.status(200).json(updatedProduct)
     } catch (error) {
         res.status(500).json({message:error.message})
     }
